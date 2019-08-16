@@ -1,0 +1,41 @@
+url
+ http://yktwww.hatenablog.com/entry/2016/07/06/024752
+ http://dev.ariel-networks.com/wp/archives/1107
+
+
+##
+gcc -c hello.c
+
+##
+objcopy --add-section=exec=func.o --set-section-flags=exec=contents,alloc,load,code textfunc.o textfunc_tmp.o
+objcopy --add-section=bindata=func_text --set-section-flags=bindata=contents,alloc,load,readonly,data textfunc_tmp.o textfunc_tmp2.o
+
+##
+gcc textfunc_tmp2.o -o text_func
+
+## disp obj
+objdump -x func.o
+objdump -h -j .text func.o
+
+objdump -h -j .text func.o | grep text | awk '{print $3, $4, $5, $6}'
+objdump -h -j .text func.o | awk '/text/ {print $3, $4, $5, $6}'
+objdump -h -j .text func.o | awk '/text/ {print size=$3, offset=$6-$5+$4}'
+objdump -h -j .text func.o | awk '/text/ {printf "count=%d,seek=%d\n",strtonum("0x"$3),strtonum("0x"($6-$5+$4))}'
+
+------
+12 .text         000001ac  08048320  08048320  00000320  2**4
+                 CONTENTS, ALLOC, LOAD, READONLY, CODE
+ .textセクションのVMA(virtual memory address): 0x08048320
+ .textセクションのファイル内でのオフセット: 0x00000320
+ 関数fnの実体は.textセクションにあり、VMAでのアドレスが 0x080483d4
+ ファイル内の関数fnのオフセット: 0x00000320 + (0x080483d4 - 0x08048320)
+------
+
+## cut
+objcopy -O binary --only-section=.text ./func.o ./func_cp.bin
+ or
+dd if=./func.o of=./func_text bs=1 skip=64 count=20
+hexdump ./func_text -C
+
+## zero fill
+dd if=/dev/zero of=./func.o bs=1 seek=64 count=20 conv=notrunc
